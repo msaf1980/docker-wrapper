@@ -22,6 +22,8 @@ var (
 	ErrNameIsInUse = errors.New("container with name is already in use")
 	ErrParse       = errors.New("parse output error")
 	ErrImageNotSet = errors.New("image not set")
+
+	ErrImagePull = errors.New("image pull error")
 )
 
 type DockerError struct {
@@ -42,6 +44,7 @@ var (
 	reContainerIsNotRunning = regexp.MustCompile(" Container .* is not running")
 	reContainerIsInUse      = regexp.MustCompile(" Container .* is already in use")
 	reContainerNotExist     = regexp.MustCompile(" No such container")
+	reContainerId           = regexp.MustCompile(`^[a-zA-Z0-9_\-]`)
 )
 
 func dockerError(out string, origErr error) error {
@@ -76,6 +79,31 @@ type Container struct {
 	Envs    []string // Envirment variables (optional)
 
 	containerID string
+}
+
+// Container.Pull pull image for container
+func (c *Container) Pull() error {
+	if len(c.Docker) == 0 {
+		c.Docker = "docker"
+	}
+
+	if len(c.Image) == 0 {
+		return fmt.Errorf("image not set")
+	}
+	if len(c.Tag) == 0 {
+		c.Tag = "latest"
+	}
+
+	opts := []string{"pull", c.Image + ":" + c.Tag}
+
+	cmd := exec.Command(c.Docker, opts...)
+	out, err := cmd.CombinedOutput()
+	outStr := string(out)
+	if err != nil {
+		err = dockerError(outStr, ErrImagePull)
+	}
+
+	return err
 }
 
 // Container.Start start container
@@ -120,10 +148,15 @@ func (c *Container) Start() error {
 	outStr := string(out)
 	if err == nil {
 		s := strings.Split(outStr, "\n")
-		if len(s) == 2 && len(s[1]) == 0 {
-			c.containerID = s[0]
+		if len(s) > 1 {
+			id := s[len(s)-2]
+			if reContainerId.MatchString(id) {
+				c.containerID = id
+			} else {
+				err = dockerError(outStr, ErrParse)
+			}
 		} else {
-			err = ErrParse
+			err = dockerError(outStr, ErrParse)
 		}
 	} else {
 		err = dockerError(outStr, err)

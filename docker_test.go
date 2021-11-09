@@ -2,12 +2,15 @@ package docker_wrapper
 
 import (
 	"errors"
+	"os"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+var pid string = strconv.Itoa(os.Getpid())
 
 func TestContainer(t *testing.T) {
 	tests := []struct {
@@ -25,7 +28,7 @@ func TestContainer(t *testing.T) {
 		{
 			image: "redis",
 			tag:   "6.2",
-			name:  "redis-6.2",
+			name:  "redis-6.2-" + pid,
 		},
 	}
 	for i, tt := range tests {
@@ -70,7 +73,7 @@ func TestContainer_IsRunning(t *testing.T) {
 	c := &Container{
 		Image: "redis",
 		Tag:   "6.2",
-		Name:  "redis-6.2",
+		Name:  "redis-6.2" + pid,
 	}
 	err := c.Start()
 	require.NoErrorf(t, err, "Container.Start() %s")

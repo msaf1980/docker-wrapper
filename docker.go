@@ -123,7 +123,7 @@ func (c *Container) Start() error {
 		if len(s) == 2 && len(s[1]) == 0 {
 			c.containerID = s[0]
 		} else {
-			err = ErrParse
+			err = dockerError(outStr, ErrParse)
 		}
 	} else {
 		err = dockerError(outStr, err)

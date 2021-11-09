@@ -1,6 +1,6 @@
 # docker-wrapper
 
-Simple docker wrapper with cli interface.
+Simple docker wrapper (use docker cli interface).
 
 It's simple (no direct docker API used).
 
